@@ -1,0 +1,11 @@
+Flask
+tensorflow
+numpy
+opencv-python
+Pillow
+scikit-learn
+scipy
+sqlalchemy
+h5py
+google-cloud-storage
+gunicorn
