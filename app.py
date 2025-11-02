@@ -2,10 +2,10 @@ import os
 import cv2
 import sqlite3
 import numpy as np
+import requests
 from flask import Flask, render_template, request
 from keras.models import load_model
 from werkzeug.utils import secure_filename
-from google.cloud import storage
 
 app = Flask(__name__)
 
@@ -14,22 +14,23 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 MODEL_PATH = 'face_emotionModel.h5'
-BUCKET_NAME = os.getenv('GCS_BUCKET_NAME')
-MODEL_BLOB = os.getenv('GCS_MODEL_PATH', 'models/face_emotionModel.h5')
+MODEL_URL = os.getenv('MODEL_URL')  # Add this in your Render environment settings
 
 # -------------------------------
-# Download model from Google Cloud Storage (GCS)
+# Download model from external URL
 # -------------------------------
-def download_model_from_gcs():
+def download_model():
     if not os.path.exists(MODEL_PATH):
-        print("Downloading model from GCS...")
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(BUCKET_NAME)
-        blob = bucket.blob(MODEL_BLOB)
-        blob.download_to_filename(MODEL_PATH)
+        if not MODEL_URL:
+            raise RuntimeError("MODEL_URL not set in environment variables.")
+        print("Downloading model from external URL...")
+        response = requests.get(MODEL_URL)
+        response.raise_for_status()
+        with open(MODEL_PATH, 'wb') as f:
+            f.write(response.content)
         print("Model downloaded successfully!")
 
-download_model_from_gcs()
+download_model()
 model = load_model(MODEL_PATH)
 
 emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
@@ -56,7 +57,7 @@ def init_db():
 init_db()
 
 # -------------------------------
-# Prediction function
+# Emotion prediction function
 # -------------------------------
 def predict_emotion(img_path):
     img = cv2.imread(img_path)
