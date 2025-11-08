@@ -1,11 +1,12 @@
 Flask
 tensorflow
 numpy
+pandas
 opencv-python
 Pillow
 scikit-learn
 scipy
 sqlalchemy
 h5py
-google-cloud-storage
 gunicorn
+huggingface-hub
