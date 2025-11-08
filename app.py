@@ -2,37 +2,31 @@ import os
 import cv2
 import sqlite3
 import numpy as np
-import requests
 from flask import Flask, render_template, request
 from keras.models import load_model
 from werkzeug.utils import secure_filename
+from huggingface_hub import hf_hub_download
 
+# Initialize Flask app
 app = Flask(__name__)
 
+# Upload directory
 UPLOAD_FOLDER = 'static/uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-MODEL_PATH = 'face_emotionModel.h5'
-MODEL_URL = os.getenv('MODEL_URL')  # Add this in your Render environment settings
-
 # -------------------------------
-# Download model from external URL
+# Load model directly from Hugging Face
 # -------------------------------
-def download_model():
-    if not os.path.exists(MODEL_PATH):
-        if not MODEL_URL:
-            raise RuntimeError("MODEL_URL not set in environment variables.")
-        print("Downloading model from external URL...")
-        response = requests.get(MODEL_URL)
-        response.raise_for_status()
-        with open(MODEL_PATH, 'wb') as f:
-            f.write(response.content)
-        print("Model downloaded successfully!")
+REPO_ID = "steph2502/face-emotion-model"  # Your Hugging Face model repo
+FILENAME = "face_emotionModel.h5"         # The exact name of your uploaded .h5 file
 
-download_model()
-model = load_model(MODEL_PATH)
+print("Downloading model from Hugging Face Hub...")
+model_path = hf_hub_download(repo_id=REPO_ID, filename=FILENAME)
+model = load_model(model_path)
+print("Model loaded successfully!")
 
+# Emotion labels
 emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
 # -------------------------------
@@ -69,6 +63,9 @@ def predict_emotion(img_path):
     emotion_index = np.argmax(preds[0])
     return emotion_labels[emotion_index]
 
+# -------------------------------
+# Routes
+# -------------------------------
 @app.route('/')
 def index():
     return render_template('index.html')
